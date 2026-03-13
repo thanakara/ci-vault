@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+cat << "EOF"
+
+     ____________     
+    |            |    
+    |  CI-VAULT  |    
+    |____________|
+
+EOF
