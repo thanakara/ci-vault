@@ -10,14 +10,24 @@ on:
     
 
 jobs:
-    draw:
+    produce:
         runs-on: ubuntu-latest
+        outputs:
+            sketch: ${{ steps.generate-sketch.outputs.sketch }}
         steps:
           - uses: actions/checkout@v4
 
-          - name: Run the script
+          - name: Generate and Export sketch
+            id: generate-sketch
             run: |
                 set -euo pipefail
-                ls -la
+
                 chmod +x misc/draw
-                misc/draw
+                misc/draw >> "$GITHUB_OUTPUT"
+    consume:
+        runs-on: ubuntu-latest
+        needs: produce
+        steps:
+          - run: |
+                echo $GITHUB_OUTPUT
+                echo "from_produce: ${{ needs.produce.outputs.sketch }}"
