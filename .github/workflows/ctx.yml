@@ -1,0 +1,73 @@
+name: Context-Explorer
+
+on:
+  push:
+    branches:
+      - feature/*
+  workflow_dispatch:
+
+jobs:
+    explore-contexts:
+        runs-on: ubuntu-latest
+        timeout-minutes: 1
+        permissions:
+            contents: read
+
+        steps:
+          - name: GitHub Context
+            run: |
+                echo "=== GITHUB CONTEXT ==="
+                echo "Repository:        ${{ github.repository }}"
+                echo "Owner:             ${{ github.repository_owner }}"
+                echo "Ref:               ${{ github.ref }}"
+                echo "Ref name:          ${{ github.ref_name }}"
+                echo "SHA:               ${{ github.sha }}"
+                echo "Actor:             ${{ github.actor }}"
+                echo "Event name:        ${{ github.event_name }}"
+                echo "Workflow:          ${{ github.workflow }}"
+                echo "Run ID:            ${{ github.run_id }}"
+                echo "Run number:        ${{ github.run_number }}"
+
+          - name: Runner Context
+            run: |
+                echo "=== RUNNER CONTEXT ==="
+                echo "OS:                ${{ runner.os }}"
+                echo "Arch:              ${{ runner.arch }}"
+                echo "Name:              ${{ runner.name }}"
+                echo "Temp dir:          ${{ runner.temp }}"
+                echo "Tool cache:        ${{ runner.tool_cache }}"
+
+          - name: Job Context
+            run: |
+                echo "=== JOB CONTEXT ==="
+                echo "Status:            ${{ job.status }}"
+
+    if-expressions:
+        runs-on: ubuntu-latest
+        needs: explore-contexts
+        permissions:
+            contents: read
+        steps:
+          - name: Only on main
+            if: github.ref == 'refs/heads/main'
+            run: echo "Running on main branch"
+
+          - name: Only on feature branches
+            if: startsWith(github.ref, 'refs/heads/feature/')
+            run: echo "Running on feature branch - ${{ github.ref_name }}"
+
+          - name: Only on manual trigger
+            if: github.event_name == 'workflow_dispatch'
+            run: echo "Triggered manually by ${{ github.actor }}"
+
+          - name: Only on push
+            if: github.event_name == 'push'
+            run: echo "Triggered by a push from ${{ github.actor }}"
+
+          - name: Linux-only step
+            if: runner.os == 'Linux'
+            run: echo "This runner is Linux — safe to use apt, bash, etc..."
+
+          - name: Notify result
+            if: always()
+            run: echo "Job finished with status → ${{ job.status }}"

@@ -1,33 +1,61 @@
 name: CI-basic
 
+# GHA runs each action in Node.js runtime: @v4 uses Node 24
 on:
     push:
         branches:
-            # - main
             - feature/*
-
     workflow_dispatch:
     
 
 jobs:
-    produce:
+    misc-script:
         runs-on: ubuntu-latest
-        outputs:
-            sketch: ${{ steps.generate-sketch.outputs.sketch }}
+        permissions:
+            contents: read
         steps:
-          - uses: actions/checkout@v4
-
-          - name: Generate and Export sketch
-            id: generate-sketch
+          - uses: actions/checkout@v6
+          - name: Run draw script
+            timeout-minutes: 1
             run: |
                 set -euo pipefail
 
                 chmod +x misc/draw
-                misc/draw >> "$GITHUB_OUTPUT"
+                misc/draw
+
+    produce:
+        runs-on: ubuntu-latest
+        outputs:
+            foo: ${{ steps.generate-foo.outputs.foo }}
+        steps:
+          - uses: actions/checkout@v6
+
+          - name: Generate and export foo
+            id: generate-foo
+            run: |
+                foo=bar
+
+                # 1) step output (for job output)
+                echo "foo=${foo}" >> "$GITHUB_OUTPUT"
+                
+                # 2) job-scoped env variable
+                echo "FOO=${foo}" >> "$GITHUB_ENV"
+
+          - name: Inspect
+            run: |
+                echo "foo (via step-output):     ${{ steps.generate-foo.outputs.foo }}"
+                echo "FOO (via GITHUB_ENV):      $FOO"
+
     consume:
         runs-on: ubuntu-latest
-        needs: produce
+        needs: [misc-script, produce]
+        strategy:
+            matrix:
+                environ: [dev, prod]
         steps:
-          - run: |
-                echo $GITHUB_OUTPUT
-                echo "from_produce: ${{ needs.produce.outputs.sketch }}"
+          - name: Inspect values in the consume-job (FOO is unset)
+            run: |
+                echo "Environment:                ${{ matrix.environ }}"
+                echo "Value from produce-job:     ${{ needs.produce.outputs.foo }}"
+                echo "FOO in consume-job:         ${FOO:-<UNSET>}"
+
