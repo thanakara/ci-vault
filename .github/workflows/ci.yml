@@ -1,7 +1,13 @@
-name: CI
+name: CI-basic
 
 on:
+    push:
+        branches:
+            # - main
+            - feature/*
+
     workflow_dispatch:
+    
 
 jobs:
     draw:
@@ -11,6 +17,7 @@ jobs:
 
           - name: Run the script
             run: |
+                set -euo pipefail
                 ls -la
                 chmod +x misc/draw
                 misc/draw
