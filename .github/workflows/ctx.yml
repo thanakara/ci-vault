@@ -1,0 +1,26 @@
+name: Github-Script - Step 1
+
+on:
+  push:
+    branches: [feature/script]
+
+jobs:
+  ctx-object:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump ctx
+        uses: actions/github-script@v8
+        with:
+          script: |
+            console.log(context.repo)
+            console.log(context.eventName)
+            console.log(context.actor)
+            console.log(context.sha)
+
+      - name: Pass via env
+        uses: actions/github-script@v8
+        env:
+          ACTOR: ${{github.actor}}
+        with:
+          script: |
+            console.log(process.env.ACTOR)
