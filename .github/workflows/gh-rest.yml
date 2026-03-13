@@ -1,0 +1,37 @@
+name: Github-Script - Step 2
+
+on:
+    push:
+        branches: [feature/script]
+jobs:
+    api-call:
+        runs-on: ubuntu-latest
+        steps:
+          - name: Get repo info
+            uses: actions/github-script@v8
+            with:
+                script: |
+                    const repo = await github.rest.repos.get({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                    });
+
+                    console.log(repo.data.full_name);
+                    console.log(repo.data.description);
+                    console.log(repo.data.default_branch);
+          - name: List branches
+            uses: actions/github-script@v8
+            with:
+                script: |
+                    const branches = await github.rest.repos.listBranches({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                    });
+
+                    for (const branch of branches.data) {
+                        console.log(branch.name)
+                    }
+
+# NOTE:
+# 1) await - all API calls are async
+# 2) .data - the response is wrapped. Actual payload is in .data

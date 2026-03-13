@@ -1,8 +1,7 @@
 name: Github-Script - Step 1
 
 on:
-  push:
-    branches: [feature/script]
+  workflow_dispatch:
 
 jobs:
   ctx-object:
