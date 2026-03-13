@@ -1,0 +1,16 @@
+name: CI
+
+on:
+    workflow_dispatch:
+
+jobs:
+    draw:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v4
+
+          - name: Run the script
+            run: |
+                ls -la
+                chmod +x misc/draw
+                misc/draw
