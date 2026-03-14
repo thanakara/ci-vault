@@ -1,6 +1,6 @@
 name: CI-basic
 
-# GHA runs each action in Node.js runtime: @v4 uses Node 24
+# GHA runs each action in Node.js runtime: @v6 uses Node 24
 on:
     push:
         branches:
@@ -23,6 +23,7 @@ jobs:
                 chmod +x misc/draw
                 misc/draw
 
+# pass variables on steps via GITHUB_OUTPUT/_ENV
     produce:
         runs-on: ubuntu-latest
         outputs:

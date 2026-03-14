@@ -1,0 +1,56 @@
+name: Build Docker Image
+
+on:
+  push:
+    branches:
+      - feature/basic
+  workflow_dispatch:
+
+jobs:
+  docker-build-args:
+    name: Build Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: my-app:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            APP_USER=${{vars.USERNAME}}
+    
+  docker-container-run:
+    name: Run the job inside the container
+    runs-on: ubuntu-latest
+    # All steps below execute inside the container
+    container:
+      image: python:3.12-alpine
+      env:
+          APP_USER: ${{vars.USERNAME}}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check python version and echo env var
+      # python --version prints to stderror; redirect to stdout
+        run: |
+            VERSION=$(python --version 2>&1)
+            echo "Python version: $VERSION"
+            echo "APP_USER: $APP_USER"
+
+      - name: Run a python script
+        run: |
+            python -c "
+            import os
+
+            print('APP_USER:', os.environ.get('APP_USER', '<UNSET>'))
+
+            "
