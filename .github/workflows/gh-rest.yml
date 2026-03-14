@@ -1,8 +1,8 @@
 name: Github-Script - Step 2
 
 on:
-    push:
-        branches: [feature/script]
+    workflow_dispatch:
+
 jobs:
     api-call:
         runs-on: ubuntu-latest
