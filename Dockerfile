@@ -1,7 +1,15 @@
-FROM alpine:latest
+FROM node:20-alpine
 
-COPY . /workdir
+# Declare build args (passed via --build-args)
+ARG APP_USER
 
-WORKDIR /workdir
+# Make them visible as env vars inside the container @runtime also
+ENV APP_USER=$APP_USER
 
-CMD ["sh"]
+WORKDIR /app
+
+RUN echo "APP_USER=$APP_USER"
+
+COPY . .
+
+CMD ["node", "-e", "console.log('APP_USER: |', process.env.APP_USER, ' |')"]
