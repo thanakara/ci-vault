@@ -1,0 +1,26 @@
+name: Reusable - deploy
+
+on:
+    workflow_call:
+        inputs:
+            environment:
+                description: Target environment to deploy to
+                type: string
+                required: true
+
+jobs:
+    deploy:
+        name: Deploy to ${{ inputs.environment }}
+        runs-on: ubuntu-latest
+
+        steps:
+          - name: Deploying
+            run: echo "Deploying to ${{ inputs.environment }}..."
+
+          - name: Done
+            run: |
+                if [ "${{ inputs.environment }}" = "production" ]; then
+                echo "Production is live!"
+                else
+                echo "Staging is live — ready for QA."
+                fi

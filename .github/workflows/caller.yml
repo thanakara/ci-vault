@@ -1,0 +1,17 @@
+name: Deploy all environments
+
+on:
+    push:
+        branches: [feature/basic]
+    workflow_dispatch:
+
+jobs:
+    deploy-staging:
+        uses: ./.github/workflows/resuable-deploy.yml
+        with:
+            environment: staging
+    
+    deploy-production:
+        uses: ./.github/workflows/resuable-deploy.yml
+        with:
+            environment: production
