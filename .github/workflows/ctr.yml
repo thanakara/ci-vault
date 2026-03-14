@@ -22,11 +22,15 @@ jobs:
         with:
           context: .
           push: false
+          load: true    # loads the image into the local docker daemon so we can run it
           tags: my-app:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
             APP_USER=${{vars.USERNAME}}
+
+      - name: Run the image
+        run: docker run --rm my-app:latest
     
   docker-container-run:
     name: Run the job inside the container
