@@ -7,6 +7,8 @@ on:
 jobs:
     interact-with-issue:
         runs-on: ubuntu-latest
+        permissions:
+            issues: write       # give the right (write) permissions
         steps:
           - name: Comment on issue
             uses: actions/github-script@v8
