@@ -1,0 +1,74 @@
+name: Github-Script - Step 6
+
+on:
+    push:
+        branches: [feature/*]
+
+jobs:
+    paginate:
+        runs-on: ubuntu-latest
+        permissions:
+            issues: read
+            pull-requests: read
+        steps:
+          - name: List all issues and PRs
+            id: fetch
+            uses: actions/github-script@v8
+            with:
+                script: |
+                    core.info("Fetching all issues and PRs~")
+
+                    // issues endpoint returns both issues and prs
+                    const all = await github.paginate(
+                        github.rest.issues.listForRepo,
+                        {
+                            owner: context.repo.owner,
+                            repo: context.repo.repo,
+                            state: "all",
+                            per_page: 20
+                        }
+                    );
+
+                    // split into two lists
+                    const issues = all.filter(i => !i.pull_request);
+                    const prs = all.filter(i => i.pull_request);
+
+                    core.info(`Issues:  ${issues.length}`);
+                    core.info(`PRs:     ${prs.length}`);
+
+                    // log issues
+                    core.info("--- ISSUES ---");
+
+                    for (const issue of issues) {
+                        core.info(`#${issue.number} [${issue.state}] ${issue.title} - by @${issue.user.login}`);
+                    }
+
+                    // log prs
+                    core.info("--- ISSUES ---");
+
+                    for (const pr of prs) {
+                        core.info(`#${pr.number} [${pr.state}] ${pr.title} - by @${pr.user.login}`);
+                    }
+
+                    // pass counts to next step
+                    core.setOutput("issue_count", issues.length.toString());
+                    core.setOutput("pr_count", prs.length.toString());
+
+          - name: Write Summary
+            uses: actions/github-script@v8
+            with:
+                script: |
+                    const issueCount = ${{steps.fetch.outputs.issue_count}};
+                    const prCount = ${{steps.fetch.outputs.pr_count}};
+
+                    await core.summary
+                            .addHeading("Repo Overview")
+                            .addTable([
+                                [{data: "Type", header: true}, {data: "Count", header: true}],
+                                ["Issues", issueCount.toString()],
+                                ["Pull Requests", prCount.toString()]
+                            ])
+                            .write();
+
+                            core.info("Summary written");
+                    
