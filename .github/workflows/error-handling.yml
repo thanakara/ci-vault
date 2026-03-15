@@ -1,0 +1,87 @@
+name: Github-Script - Step 8
+
+on:
+    push:
+        branches: [feature/*]
+
+jobs:
+    error-handle:
+        runs-on: ubuntu-latest
+        permissions:
+            issues: read
+        steps:
+          - name: Fetching existing issue
+            id: existing-issue
+            uses: actions/github-script@v8
+            with:
+                retries: 3
+                retry-exempt-status-codes: 400,401,403,404,422
+                script: |
+                    core.info("Fetching issue #5")
+
+                    try {
+                        const {data: issue} = await github.rest.issues.get({
+                            owner: context.repo.owner,
+                            repo: context.repo.repo,
+                            issue_number: 5
+                        });
+
+                        core.info(`Found: #${issue.number} - ${issue.title}`);
+                        core.setOutput("issue_title", issue.title);
+                    } catch(err) {
+                        if (err.status === 404) {
+                            core.warning(`Issue #5 not found - skipping`)
+                        } else {
+                            core.setFailed(`Unexpected error: ${err.message}`);
+                         }
+                     }
+
+          - name: Fetch non-existing issue
+            id: missing-issue
+            uses: actions/github-script@v8
+            with:
+                retries: 3
+                retry-exempt-status-codes: 400,401,403,404,422
+                script: |
+                    core.info("Fetching issue #99")
+                    try {
+                        const { data: issue } = await github.rest.issues.get({
+                            owner: context.repo.owner,
+                            repo: context.repo.repo,
+                            issue_number: 99
+                        })
+
+                        core.info(`Found: #${issue.number} — ${issue.title}`)
+
+                        } catch (err) {
+                            if (err.status === 404) {
+                                core.warning(`Issue not found (404) — handled gracefully`);
+                                core.setOutput("missing", "true");
+                            } else if (err.status === 403) {
+                                core.warning(`No permission (403) — check token scopes`);
+                            } else if (err.status === 422) {
+                                core.error(`Unprocessable entity (422) — invalid input`);
+                                core.setFailed(err.message);
+                            } else {
+                                // unknown error — fail loudly
+                                core.setFailed(`Unhandled error [${err.status}]: ${err.message}`);
+                            }
+                        }
+
+          - name: Write summary
+            if: always()
+            uses: actions/github-script@v8
+            with:
+                script: |
+                    const issueTitle = "${{steps.existing-issue.outputs.issue_title}}" || "not found";
+                    const missing = "${{steps.missing-issue.outputs.missing}}" === "true";
+
+                    await core.summary
+                            .addHeading("Error Handling Demo")
+                            .addTable([
+                                [{data: "Step", header: true}, {data: "Result", header: true}],
+                                ["Issue #5", issueTitle],
+                                ["Issue #99", missing ? "⚠️ 404 handled gracefully" : "✅ found"]
+                            ])
+                            .write()
+
