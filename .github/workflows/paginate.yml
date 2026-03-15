@@ -1,8 +1,7 @@
 name: Github-Script - Step 6
 
 on:
-    push:
-        branches: [feature/*]
+    workflow_dispatch:
 
 jobs:
     paginate:
@@ -44,7 +43,7 @@ jobs:
                     }
 
                     // log prs
-                    core.info("--- ISSUES ---");
+                    core.info("--- PRS ---");
 
                     for (const pr of prs) {
                         core.info(`#${pr.number} [${pr.state}] ${pr.title} - by @${pr.user.login}`);

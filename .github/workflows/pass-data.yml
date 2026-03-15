@@ -1,8 +1,6 @@
 name: Github-Script - Step 4
 
 on:
-    push:
-        branches: [feature/script]
     workflow_dispatch:
 
 jobs:

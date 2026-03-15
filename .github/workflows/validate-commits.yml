@@ -1,0 +1,84 @@
+name: Github-Script - Step 7
+# Conventional Commits
+# ==========================
+# feat: add login page
+# fix: resolve null pointer
+# docs: update README
+# chore: bump dependencies
+
+on:
+    push:
+        branches: [feature/*]
+
+
+jobs:
+    validate:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+        steps:
+          - name: Validate commit messages
+            uses: actions/github-script@v8
+            with:
+                script: |
+                    const validPrefixes = [
+                        "feat",
+                        "fix",
+                        "docs",
+                        "chore",
+                        "refactor",
+                        "test",
+                        "style",
+                        "ci",
+                    ];
+
+                    // regex: "prefix: message" — e.g. "feat: add login"
+                    const pattern = new RegExp(
+                    `^(${validPrefixes.join('|')})(\\(.+\\))?: .+`
+                    )
+
+                    core.info("fetching commits in this push")
+
+                    // context.payload.commits contains all commits in the push
+                    const commits = context.payload.commits;
+                    core.info(`Commits in this push: ${commits.length}`);
+
+                    const failures = [];
+
+                    for (const commit of commits) {
+                        const msg = commit.message.split("\n")[0];
+                        const valid = pattern.test(msg);
+
+                        if (valid) {
+                            core.info(`✅ ${commit.id.slice(0, 7)} — ${msg}`)
+                        } else {
+                            core.error(`❌ ${commit.id.slice(0, 7)} — ${msg}`)
+                            failures.push({ id: commit.id.slice(0, 7), msg })
+                        }
+                    }
+
+                    // write summary
+
+                    await core.summary
+                            .addHeading("Commit Message Validation")
+                            .addTable([
+                                [{data: "SHA", header: true},
+                                {data: "Message", header: true},
+                                {data: "Status", header: true}],
+                                ...context.payload.commits.map(c => {
+                                        const msg = c.message.split("\n")[0];
+                                        const okay = pattern.test(msg);
+                                        return [c.id.slice(0, 7), msg, okay ? "✅" : "❌"];
+                                })
+                            ])
+                            .write();
+
+                     // fail the job if any commits are invalid
+                    if (failures.length > 0) {
+                    core.setFailed(
+                        `${failures.length} commit(s) failed validation:\n` +
+                        failures.map(f => `  ${f.id}: ${f.msg}`).join('\n')
+                    );
+                    } else {
+                    core.info("All commits are valid");
+                    }
