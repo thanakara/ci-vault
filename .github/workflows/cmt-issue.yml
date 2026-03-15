@@ -2,11 +2,12 @@ name: Github-Script - Step 3
 
 on:
     issues:
-        types: [opened]
+        types: [opened, closed]
 
 jobs:
-    interact-with-issue:
+    on-issue-open:
         runs-on: ubuntu-latest
+        if: github.event.action == 'opened'
         permissions:
             issues: write       # give the right (write) permissions
         steps:
@@ -21,31 +22,86 @@ jobs:
                     // Fail-fast if something unexpected
                     if (!context.issue.number) {
                         core.setFailed("No issue number found in context");
+                        return;
                     }
 
                     const response = await github.rest.issues.createComment({
                         owner: context.repo.owner,
                         repo: context.repo.repo,
                         issue_number: context.issue.number,
-                        body: `👋 Thanks for opening this issue, @${context.actor}`
-                    })
+                        body: `👋 Thx for opening this, @${context.actor}`
+                    });
 
                     core.info(`Comment created at: ${response.data.html_url}`);
                     core.setOutput("cmt_id", response.data.id);
                     core.setOutput("cmt_url", response.data.html_url);
 
-          - name: Add label
+          - name: Safe add label
             uses: actions/github-script@v8
             with:
                 script: |
-                    await github.rest.issues.addLabels({
+                    const labels = await github.rest.issues.listLabelsOnIssue({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: context.issue.number
+                    });
+
+                    const hasLabel = labels.data.some(l => l.name === "triage");
+
+                    if (hasLabel) {
+                        core.info("Label already exists - skipping");
+                    } else {
+                        await github.rest.issues.addLabels({
+                            owner: context.repo.owner,
+                            repo: context.repo.repo,
+                            issue_number: context.issue.number,
+                            labels: ['triage']
+                        });
+                        core.info("Label added");
+                    }
+
+          - name: React to issue
+            uses: actions/github-script@v8
+            with:
+                script: |
+                    await github.rest.reactions.createForIssue({
                         owner: context.repo.owner,
                         repo: context.repo.repo,
                         issue_number: context.issue.number,
-                        labels: ['triage']
-                    })
+                        content: "heart"
+                    });
+                    core.info("Reaction added");
 
           - name: Log results
             run: |
                 echo "Comment ID:       ${{steps.cmt-issue.outputs.cmt_id}}"
                 echo "Comment URL:      ${{steps.cmt-issue.outputs.cmt_url}}"
+
+    on-issue-close:
+        runs-on: ubuntu-latest
+        if: github.event.action == 'closed'
+        permissions:
+            issues: write
+        steps:
+          - name: Write job summary
+            uses: actions/github-script@v8
+            with:
+                script: |
+                    core.info(`Issue #${context.issue.number} was closed by ${context.actor}`);
+
+                    await core.summary
+                            .addHeading(`Issue #${context.issue.number} Closed`)
+                            .addTable([
+                                [{data: "Field", header: true}, {data: "Value", header: true}],
+                                ["Issue number", `#${context.issue.number}`],
+                                ["Closed by", context.actor],
+                                ["Repository", context.repo.repo],
+                                ["Label", "triage"],
+                            ])
+                            .addLink(
+                                `View issue #${context.issue.number}`,
+                                context.payload.issue.html_url
+                            )
+                            .write();
+
+                    core.info("Summary written");
