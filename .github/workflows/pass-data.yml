@@ -1,0 +1,42 @@
+name: Github-Script - Step 4
+
+on:
+    push:
+        branches: [feature/script]
+    workflow_dispatch:
+
+jobs:
+    step-results:
+        runs-on: ubuntu-latest
+        steps:
+          - name: Set outputs with logging
+            id: multi-out
+            uses: actions/github-script@v8
+            with:
+                script: |
+                    core.info("__script_start__")
+
+                    const actor = context.actor;
+                    const repo = context.repo.repo;
+
+                    // simulate warning condition (yellow annotation)
+                    if (actor !== 'expected-bot') {
+                        core.warning(`Triggered by human: ${actor} - expected a bot.`);
+                    }
+                    
+                    // simulate error condition (red annotation - non-fatal)
+                    
+                    if (repo === "") {
+                        core.error("Repo name is empty - something is wrong");
+                    }
+                    
+                    core.info("__setting_outputs__");
+                    core.setOutput("actor", actor);
+                    core.setOutput("repo", repo);
+                    core.setOutput("timestamp", new Date().toISOString());
+
+          - name: Use outputs
+            run: |
+                echo "Actor     → ${{ steps.multi-out.outputs.actor }}"
+                echo "Repo      → ${{ steps.multi-out.outputs.repo }}"
+                echo "Timestamp → ${{ steps.multi-out.outputs.timestamp }}"
